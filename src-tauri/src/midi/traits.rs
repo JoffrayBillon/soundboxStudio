@@ -105,6 +105,15 @@ pub trait MidiController: Send {
         vec![]
     }
 
+    /// Optional teardown sequence sent when the app quits (e.g., switching a
+    /// Launchpad back out of Programmer Mode so it returns to normal
+    /// standalone operation instead of being left stuck showing whatever the
+    /// last LED state was). Each inner `Vec<u8>` is one independent MIDI or
+    /// SysEx message. Default: nothing to undo.
+    fn exit_sequence(&self) -> Vec<Vec<u8>> {
+        vec![]
+    }
+
     /// Every MIDI note that this device treats as a sound-triggering pad.
     /// Used to build the pad grid in the UI.
     fn pad_notes(&self) -> Vec<u8>;

@@ -164,6 +164,19 @@ impl MidiController for LaunchpadMiniMk3 {
         vec![vec![0xF0, 0x00, 0x20, 0x29, 0x02, 0x0D, 0x00, 0x7F, 0xF7]]
     }
 
+    /// Returns the SysEx to leave Programmer Mode, restoring the device's
+    /// normal Session layout (0), sent when the app quits so the Launchpad
+    /// doesn't stay stuck in Programmer Mode (unresponsive to its own
+    /// standalone button/light behaviour) after Soundbox Studio closes.
+    fn exit_sequence(&self) -> Vec<Vec<u8>> {
+        if !self.programmer_mode {
+            return vec![];
+        }
+        // Standalone layout select — select layout 0x00 = Session.
+        // Format: F0 00 20 29 02 0D 00 00 F7
+        vec![vec![0xF0, 0x00, 0x20, 0x29, 0x02, 0x0D, 0x00, 0x00, 0xF7]]
+    }
+
     fn pad_notes(&self) -> Vec<u8> {
         // 8×8 grid: notes 11–88 with the layout formula row*10 + col.
         let mut notes = Vec::with_capacity(64);

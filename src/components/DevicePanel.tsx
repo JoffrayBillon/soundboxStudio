@@ -18,6 +18,10 @@ interface DevicePanelProps {
   /// it, to support devices that have no dedicated driver without touching
   /// any code.
   onLoadCustomProfile: () => void;
+  /// Re-sends the active driver's init sequence (e.g. re-asserts Programmer
+  /// Mode on a Launchpad) — a manual safety net since there's no way to
+  /// query the device's current mode over MIDI.
+  onResyncDevice: () => void;
 }
 
 export const DevicePanel: React.FC<DevicePanelProps> = ({
@@ -31,6 +35,7 @@ export const DevicePanel: React.FC<DevicePanelProps> = ({
   onRefreshMidi,
   onSelectAudio,
   onLoadCustomProfile,
+  onResyncDevice,
 }) => {
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900 rounded-xl border border-gray-800">
@@ -92,6 +97,15 @@ export const DevicePanel: React.FC<DevicePanelProps> = ({
             Active layout:{" "}
             <span className="text-gray-300 font-medium">{controllerName}</span>
           </p>
+        )}
+        {activeDeviceId !== null && (
+          <button
+            onClick={onResyncDevice}
+            className="w-full mt-2 text-xs text-gray-500 hover:text-violet-400 transition-colors text-left"
+            title="Re-send the device's Programmer Mode / init sequence — use this if the pad's LEDs or layout stop responding correctly (e.g. after a physical reset)"
+          >
+            Resync device (force Programmer Mode)
+          </button>
         )}
       </div>
 

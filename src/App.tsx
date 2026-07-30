@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { DevicePanel } from "./components/DevicePanel";
 import { MidiMonitor } from "./components/MidiMonitor";
 import { PadGrid } from "./components/PadGrid";
@@ -9,6 +10,7 @@ import { StatusBar } from "./components/StatusBar";
 import { useMidi } from "./hooks/useMidi";
 import { useAudio } from "./hooks/useAudio";
 import { useDeviceLayout } from "./hooks/useDeviceLayout";
+import { useAppSettings } from "./hooks/useAppSettings";
 import type { PadConfig, Profile } from "./types";
 
 export default function App() {
@@ -25,11 +27,33 @@ export default function App() {
   const {
     outputDevices: audioDevices,
     activeOutputId,
-    playSoundFile,
+    playingPads,
+    triggerPad,
     setOutputDevice,
   } = useAudio();
 
+  // Remembers the last-used MIDI device / audio output / profile across app
+  // restarts (see `settings.rs`) so the user doesn't have to redo this setup
+  // every launch.
+  const { settings, loaded: settingsLoaded, updateSettings } = useAppSettings();
+  // Each restore should only ever be attempted once at startup — otherwise
+  // e.g. a later manual disconnect would immediately get auto-reconnected
+  // again the next time `midiDevices` refreshes.
+  const hasTriedMidiRestore = useRef(false);
+  const hasTriedAudioRestore = useRef(false);
+  const hasTriedProfileRestore = useRef(false);
+
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
+  const [padContextMenu, setPadContextMenu] = useState<{
+    padId: string;
+    x: number;
+    y: number;
+    hasSound: boolean;
+  } | null>(null);
+  // Id of the pad currently under the cursor during a file drag, so
+  // `PadGrid` can highlight it as a drop target (null when not dragging or
+  // hovering empty space).
+  const [dragOverPadId, setDragOverPadId] = useState<string | null>(null);
 
   const activeDevice = midiDevices.find((d) => d.id === activeDeviceId);
   const {
@@ -37,6 +61,79 @@ export default function App() {
     controllerName,
     loadCustomProfile,
   } = useDeviceLayout(activeDevice?.name ?? null, activeDeviceId !== null);
+
+  // Auto-reconnects the last-used MIDI device by name once it shows up in a
+  // `list_midi_devices` refresh (numeric ids/ports aren't stable across
+  // restarts, so name is the only thing worth persisting/matching on).
+  useEffect(() => {
+    if (
+      hasTriedMidiRestore.current ||
+      !settingsLoaded ||
+      activeDeviceId !== null ||
+      midiDevices.length === 0
+    ) {
+      return;
+    }
+    hasTriedMidiRestore.current = true;
+    const match = settings.last_midi_device_name
+      ? midiDevices.find((d) => d.name === settings.last_midi_device_name)
+      : undefined;
+    if (match) connectMidi(match.id);
+  }, [settingsLoaded, settings.last_midi_device_name, midiDevices, activeDeviceId, connectMidi]);
+
+  // Auto-restores the last-used audio output device once the list is
+  // fetched. Note: `set_audio_output_device` is currently a backend no-op
+  // (see commands.rs) so this only affects which option looks selected in
+  // the UI for now, not actual routing.
+  useEffect(() => {
+    if (hasTriedAudioRestore.current || !settingsLoaded || audioDevices.length === 0) {
+      return;
+    }
+    hasTriedAudioRestore.current = true;
+    const match = settings.last_audio_device_id
+      ? audioDevices.find((d) => d.id === settings.last_audio_device_id)
+      : undefined;
+    if (match && match.id !== activeOutputId) setOutputDevice(match.id);
+  }, [settingsLoaded, settings.last_audio_device_id, audioDevices, activeOutputId, setOutputDevice]);
+
+  // Auto-loads the last-used profile on startup.
+  useEffect(() => {
+    if (hasTriedProfileRestore.current || !settingsLoaded || !settings.last_profile_id) {
+      return;
+    }
+    hasTriedProfileRestore.current = true;
+    invoke<Profile>("load_profile", { id: settings.last_profile_id })
+      .then(setActiveProfile)
+      .catch(() => {
+        // Profile may have been deleted since — nothing to restore.
+      });
+  }, [settingsLoaded, settings.last_profile_id]);
+
+  // Persist the current selection whenever it changes, so the *next*
+  // restart restores whatever was last actually in use.
+  useEffect(() => {
+    if (activeDevice?.name) updateSettings({ last_midi_device_name: activeDevice.name });
+  }, [activeDevice?.name, updateSettings]);
+
+  useEffect(() => {
+    if (activeOutputId) updateSettings({ last_audio_device_id: activeOutputId });
+  }, [activeOutputId, updateSettings]);
+
+  useEffect(() => {
+    if (activeProfile?.id) updateSettings({ last_profile_id: activeProfile.id });
+  }, [activeProfile?.id, updateSettings]);
+
+  // Re-sends the active controller's init sequence (re-asserts Programmer
+  // Mode on a Launchpad) on demand — there's no way to query the device's
+  // current mode over MIDI, so this is a manual safety net for when it was
+  // reset by a physical button combo/power cycle the app didn't detect.
+  const handleResyncDevice = useCallback(async () => {
+    try {
+      await invoke("resync_device");
+    } catch (err) {
+      console.error("Failed to resync device:", err);
+    }
+  }, []);
 
   // Lets the user pick a `DeviceProfileConfig` JSON file (see
   // `device_profile.rs`) to support a device that has no dedicated Rust
@@ -51,14 +148,14 @@ export default function App() {
     await loadCustomProfile(filePath);
   }, [loadCustomProfile]);
 
+  // Toggles playback: starts the pad's sound (and blinks its LED green) if
+  // it isn't already playing, or stops it if it is — so clicking the same
+  // pad repeatedly no longer layers overlapping copies of the same sound.
   const handlePadClick = useCallback(
     async (id: string) => {
-      const pad = activeProfile?.pads.find((p) => p.id === id);
-      if (pad?.sound_path) {
-        await playSoundFile(pad.sound_path, pad.volume);
-      }
+      await triggerPad(id);
     },
-    [activeProfile, playSoundFile]
+    [triggerPad]
   );
 
   // Physical pad presses go through the backend's `translate_message` and
@@ -78,20 +175,31 @@ export default function App() {
     // No-op for now.
   }, []);
 
-  const handlePadContextMenu = useCallback(
-    async (id: string, e: React.MouseEvent) => {
-      e.preventDefault();
+  // Persists `pads` as the new active profile (locally + on the backend),
+  // then syncs `padId`'s idle LED so the physical (and future) LED state
+  // immediately reflects the sound assignment/removal instead of only
+  // updating on the pad's next play/stop cycle.
+  const persistPads = useCallback(
+    async (pads: PadConfig[], padId: string) => {
       if (!activeProfile) return;
+      const updatedProfile: Profile = { ...activeProfile, pads };
+      setActiveProfile(updatedProfile);
+      try {
+        await invoke("save_profile", { prof: updatedProfile });
+        await invoke("sync_pad_led", { padId });
+      } catch (err) {
+        console.error("Failed to save profile:", err);
+      }
+    },
+    [activeProfile]
+  );
 
-      const selected = await open({
-        multiple: false,
-        filters: [
-          { name: "Audio", extensions: ["wav", "mp3", "ogg", "flac"] },
-        ],
-      });
-
-      if (!selected) return;
-      const filePath = Array.isArray(selected) ? selected[0] : selected;
+  // Shared by both the file-picker flow (`handleAssignSound`) and dropping a
+  // file onto a pad (drag-and-drop effect below) — assigns `filePath` as the
+  // pad's sound, creating a new `PadConfig` entry if the pad had none yet.
+  const assignSoundPath = useCallback(
+    async (id: string, filePath: string) => {
+      if (!activeProfile) return;
 
       const existing = activeProfile.pads.find((p) => p.id === id);
       const layoutPad = deviceLayout?.pads.find((p) => p.id === id);
@@ -111,17 +219,104 @@ export default function App() {
             },
           ];
 
-      const updatedProfile: Profile = { ...activeProfile, pads: updatedPads };
-      setActiveProfile(updatedProfile);
-
-      try {
-        await invoke("save_profile", { prof: updatedProfile });
-      } catch (err) {
-        console.error("Failed to save profile:", err);
-      }
+      await persistPads(updatedPads, id);
     },
-    [activeProfile, deviceLayout]
+    [activeProfile, deviceLayout, persistPads]
   );
+
+  const handleAssignSound = useCallback(
+    async (id: string) => {
+      if (!activeProfile) return;
+
+      const selected = await open({
+        multiple: false,
+        filters: [
+          { name: "Audio", extensions: ["wav", "mp3", "ogg", "flac"] },
+        ],
+      });
+      if (!selected) return;
+      const filePath = Array.isArray(selected) ? selected[0] : selected;
+      await assignSoundPath(id, filePath);
+    },
+    [activeProfile, assignSoundPath]
+  );
+
+  const handleRemoveSound = useCallback(
+    async (id: string) => {
+      if (!activeProfile) return;
+      const updatedPads = activeProfile.pads.map((p) =>
+        p.id === id ? { ...p, sound_path: null } : p
+      );
+      await persistPads(updatedPads, id);
+    },
+    [activeProfile, persistPads]
+  );
+
+  // Right-clicking a pad now opens a small menu (Assign / Remove) instead of
+  // immediately opening the file picker, so removing a sound is possible.
+  const handlePadContextMenu = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      e.preventDefault();
+      if (!activeProfile) return;
+      const hasSound = !!activeProfile.pads.find((p) => p.id === id)?.sound_path;
+      setPadContextMenu({ padId: id, x: e.clientX, y: e.clientY, hasSound });
+    },
+    [activeProfile]
+  );
+
+  // Closes the pad context menu on Escape. Click-outside / right-click-
+  // elsewhere is instead handled by a full-screen overlay rendered behind
+  // the menu (see the JSX below) rather than raw `window` listeners here —
+  // attaching those directly raced with *opening* a new menu: a stale
+  // listener from a previously-open menu would fire during the same bubble
+  // phase as the new menu's own state update and immediately null it back
+  // out, so the menu appeared to never open at all after the first time.
+  useEffect(() => {
+    if (!padContextMenu) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPadContextMenu(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [padContextMenu]);
+
+  // Quick sound import: dropping an audio file onto a pad assigns it,
+  // without needing the right-click menu. Tauri's webview intercepts native
+  // OS file drag-and-drop itself (it's not a normal HTML5 `drop` DOM event),
+  // so this has to go through `onDragDropEvent` rather than `onDrop` props.
+  // The event's position is in physical pixels, so it's converted to CSS
+  // pixels before hit-testing which pad element is under the cursor via
+  // `data-pad-id` (set in PadGrid.tsx). While the drag is over a pad,
+  // `dragOverPadId` is kept in sync so `PadGrid` can show a "drop here"
+  // highlight — cleared on drop, cancel, or leaving the window.
+  useEffect(() => {
+    const hitTestPadId = (x: number, y: number): string | null => {
+      const ratio = window.devicePixelRatio || 1;
+      const target = document
+        .elementFromPoint(x / ratio, y / ratio)
+        ?.closest<HTMLElement>("[data-pad-id]");
+      return target?.dataset.padId ?? null;
+    };
+
+    let unlisten: (() => void) | undefined;
+    (async () => {
+      unlisten = await getCurrentWebview().onDragDropEvent((event) => {
+        if (event.payload.type === "over") {
+          setDragOverPadId(hitTestPadId(event.payload.position.x, event.payload.position.y));
+          return;
+        }
+
+        setDragOverPadId(null);
+        if (event.payload.type !== "drop") return;
+
+        const filePath = event.payload.paths[0];
+        if (!filePath || !/\.(wav|mp3|ogg|flac)$/i.test(filePath)) return;
+        const padId = hitTestPadId(event.payload.position.x, event.payload.position.y);
+        if (padId) assignSoundPath(padId, filePath);
+      });
+    })();
+    return () => unlisten?.();
+  }, [assignSoundPath]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-950">
@@ -152,6 +347,7 @@ export default function App() {
             onRefreshMidi={refreshMidi}
             onSelectAudio={setOutputDevice}
             onLoadCustomProfile={handleLoadCustomProfile}
+            onResyncDevice={handleResyncDevice}
           />
           <ProfileManager
             activeProfile={activeProfile}
@@ -168,6 +364,8 @@ export default function App() {
                 layout={deviceLayout}
                 pads={activeProfile.pads}
                 lastEvent={lastEvent}
+                playingPadIds={playingPads}
+                dragOverPadId={dragOverPadId}
                 onPadClick={handlePadClick}
                 onPadContextMenu={handlePadContextMenu}
                 onFunctionClick={handleFunctionClick}
@@ -211,6 +409,48 @@ export default function App() {
         deviceName={activeDevice?.name ?? null}
         profileName={activeProfile?.name ?? null}
       />
+
+      {padContextMenu && (
+        <>
+          {/* Full-screen overlay behind the menu: closes it on any click or
+              right-click elsewhere. A sibling (not an ancestor) of the menu
+              below, so clicks on the menu itself never reach it. */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setPadContextMenu(null)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setPadContextMenu(null);
+            }}
+          />
+          <div
+            className="fixed z-50 min-w-[170px] rounded-md border border-gray-700 bg-gray-900 shadow-xl py-1 text-sm"
+            style={{ left: padContextMenu.x, top: padContextMenu.y }}
+          >
+            <button
+              className="w-full text-left px-3 py-1.5 text-gray-200 hover:bg-violet-600 hover:text-white"
+              onClick={() => {
+                const { padId } = padContextMenu;
+                setPadContextMenu(null);
+                handleAssignSound(padId);
+              }}
+            >
+              Assign sound…
+            </button>
+            <button
+              className="w-full text-left px-3 py-1.5 text-gray-200 hover:bg-red-600 hover:text-white disabled:text-gray-600 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+              disabled={!padContextMenu.hasSound}
+              onClick={() => {
+                const { padId } = padContextMenu;
+                setPadContextMenu(null);
+                handleRemoveSound(padId);
+              }}
+            >
+              Remove sound
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

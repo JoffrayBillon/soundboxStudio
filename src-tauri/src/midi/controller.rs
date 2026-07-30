@@ -173,15 +173,45 @@ impl MidiPort {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    /// Searches MIDI output ports for one whose name matches `device_name`
-    /// and returns an open connection, or `None` if not found / unavailable.
+    /// Searches MIDI output ports for one matching `device_name` and returns
+    /// an open connection, or `None` if not found / unavailable.
+    ///
+    /// Tries an exact match first (true on most CoreMIDI/ALSA setups, where
+    /// input and output ports for the same device share one name), then
+    /// falls back to comparing `normalize_port_name` output — needed on
+    /// Windows (WinMM), where the same physical device's ports are named
+    /// e.g. `"MIDIIN2 (LPMiniMK3 MIDI)"` (input) vs
+    /// `"MIDIOUT2 (LPMiniMK3 MIDI)"` (output): different strings, same device.
     fn try_open_output(device_name: &str) -> Option<MidiOutputConnection> {
         let midi_out = MidiOutput::new("soundbox-studio-output").ok()?;
-        let port = midi_out
-            .ports()
-            .into_iter()
-            .find(|p| midi_out.port_name(p).ok().as_deref() == Some(device_name))?;
-        midi_out.connect(&port, "soundbox-studio-out").ok()
+        let ports = midi_out.ports();
+
+        let port = ports
+            .iter()
+            .find(|p| midi_out.port_name(p).ok().as_deref() == Some(device_name))
+            .or_else(|| {
+                let target = Self::normalize_port_name(device_name);
+                ports.iter().find(|p| {
+                    midi_out
+                        .port_name(p)
+                        .map(|n| Self::normalize_port_name(&n) == target)
+                        .unwrap_or(false)
+                })
+            })?;
+        midi_out.connect(port, "soundbox-studio-out").ok()
+    }
+
+    /// Strips WinMM's `"MIDIIN<n> "` / `"MIDIOUT<n> "` port-index prefix, or
+    /// extracts the parenthesized device name if present, so an input port
+    /// name and its corresponding output port name compare equal regardless
+    /// of platform-specific MIDI API naming conventions.
+    fn normalize_port_name(name: &str) -> &str {
+        if let (Some(start), Some(end)) = (name.find('('), name.rfind(')')) {
+            if end > start {
+                return name[start + 1..end].trim();
+            }
+        }
+        name.trim()
     }
 }
 

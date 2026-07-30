@@ -3,6 +3,7 @@ mod commands;
 mod error;
 mod midi;
 mod profile;
+mod settings;
 mod state;
 
 use state::AppState;
@@ -23,6 +24,21 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             app.manage(AppState::new());
+
+            // Watches for pads whose sound finishes playing on its own
+            // (as opposed to a manual re-click) and reverts their LED /
+            // "currently playing" bookkeeping accordingly.
+            let state = app.state::<AppState>();
+            let finished_rx = state.audio.lock().take_finished_receiver();
+            let app_handle = app.handle().clone();
+            if let Some(finished_rx) = finished_rx {
+                std::thread::spawn(move || {
+                    for pad_id in finished_rx {
+                        commands::stop_pad_playback(&app_handle, &pad_id);
+                    }
+                });
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -33,6 +49,8 @@ pub fn run() {
             commands::set_audio_output_device,
             commands::play_sound_file,
             commands::stop_all_sounds,
+            commands::trigger_pad,
+            commands::sync_pad_led,
             commands::list_profiles,
             commands::save_profile,
             commands::load_profile,
@@ -47,7 +65,21 @@ pub fn run() {
             commands::get_device_layout,
             commands::set_pad_color,
             commands::translate_midi_message,
+            commands::resync_device,
+            commands::load_app_settings,
+            commands::save_app_settings,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            // Leave Programmer Mode (return the Launchpad to its normal
+            // Session layout) when the app quits, instead of stranding the
+            // device stuck in Programmer Mode after Soundbox Studio closes.
+            // Runs synchronously so the SysEx is actually sent before the
+            // process exits, rather than racing a background thread.
+            if let tauri::RunEvent::ExitRequested { .. } = event {
+                let state = app_handle.state::<AppState>();
+                commands::send_controller_exit(&state);
+            }
+        });
 }

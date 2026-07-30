@@ -2,12 +2,14 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { DevicePanel } from "./components/DevicePanel";
 import { MidiMonitor } from "./components/MidiMonitor";
 import { PadGrid } from "./components/PadGrid";
 import { ProfileManager } from "./components/ProfileManager";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { StatusBar } from "./components/StatusBar";
+import { WindowControls } from "./components/WindowControls";
 import { useMidi } from "./hooks/useMidi";
 import { useAudio } from "./hooks/useAudio";
 import { useDeviceLayout } from "./hooks/useDeviceLayout";
@@ -363,24 +365,37 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-950">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 bg-gray-900 border-b border-gray-800 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center text-sm font-bold text-white">
+      {/* Header doubles as the custom titlebar now that native OS
+          decorations are disabled (`decorations: false` in
+          tauri.conf.json) — `data-tauri-drag-region` lets the window still
+          be dragged/double-click-maximized by this area, and
+          `WindowControls` provides the minimize/maximize/close buttons the
+          OS chrome used to. Buttons inside don't carry the drag-region
+          attribute themselves, so they stay normally clickable. */}
+      <header
+        data-tauri-drag-region
+        onDoubleClick={() => getCurrentWindow().toggleMaximize()}
+        className="flex items-center justify-between pl-6 h-11 bg-gray-900 border-b border-gray-800 flex-shrink-0"
+      >
+        <div data-tauri-drag-region className="flex items-center gap-3 h-full flex-1">
+          <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center text-sm font-bold text-white pointer-events-none">
             S
           </div>
-          <h1 className="text-sm font-semibold text-gray-100 tracking-wide">
+          <h1 className="text-sm font-semibold text-gray-100 tracking-wide pointer-events-none">
             Soundbox Studio
           </h1>
         </div>
-        <button
-          className="text-gray-400 hover:text-gray-100 text-lg leading-none px-2 py-1 rounded hover:bg-gray-800"
-          onClick={() => setShowSettings(true)}
-          aria-label="Sound settings"
-          title="Sound settings"
-        >
-          ⚙
-        </button>
+        <div className="flex items-center h-full">
+          <button
+            className="text-gray-400 hover:text-gray-100 text-lg leading-none px-3 h-full flex items-center hover:bg-gray-800"
+            onClick={() => setShowSettings(true)}
+            aria-label="Sound settings"
+            title="Sound settings"
+          >
+            ⚙
+          </button>
+          <WindowControls />
+        </div>
       </header>
 
       {/* Main layout */}

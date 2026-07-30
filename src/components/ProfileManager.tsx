@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import type { Profile } from "../types";
+import type { DeviceLayout, Profile } from "../types";
 
 interface ProfileManagerProps {
   activeProfile: Profile | null;
+  deviceLayout: DeviceLayout | null;
   onProfileLoad: (profile: Profile) => void;
 }
 
 export const ProfileManager: React.FC<ProfileManagerProps> = ({
   activeProfile,
+  deviceLayout,
   onProfileLoad,
 }) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -29,13 +31,18 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
   }, []);
 
   const handleCreate = async () => {
-    if (!newName.trim()) return;
+    if (!newName.trim() || !deviceLayout) return;
     try {
+      const gridPads = deviceLayout.pads
+        .filter((p) => p.kind === "grid_pad")
+        .map((p) => ({ id: p.id, note: p.note }));
+
       const profile = await invoke<Profile>("create_profile", {
         name: newName.trim(),
         deviceName: "Generic MIDI",
-        rows: 8,
-        cols: 8,
+        rows: deviceLayout.rows,
+        cols: deviceLayout.cols,
+        gridPads,
       });
       onProfileLoad(profile);
       setNewName("");
@@ -45,6 +52,7 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
       console.error("Failed to create profile:", e);
     }
   };
+
 
   const handleLoad = async (id: string) => {
     try {
@@ -73,11 +81,18 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
         </h3>
         <button
           onClick={() => setIsCreating((v) => !v)}
-          className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+          disabled={!deviceLayout}
+          className="text-xs text-violet-400 hover:text-violet-300 disabled:text-gray-700 disabled:cursor-not-allowed transition-colors"
         >
           {isCreating ? "Cancel" : "+ New"}
         </button>
       </div>
+
+      {!deviceLayout && (
+        <p className="text-xs text-gray-600 italic">
+          Connect a MIDI device to create a profile matching its layout.
+        </p>
+      )}
 
       {isCreating && (
         <div className="flex gap-2">

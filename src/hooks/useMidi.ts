@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import type { MidiDevice, MidiEvent } from "../types";
+import type { DeviceAction, MidiDevice, MidiEvent } from "../types";
 
 export function useMidi() {
   const [devices, setDevices] = useState<MidiDevice[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<number | null>(null);
   const [lastEvent, setLastEvent] = useState<MidiEvent | null>(null);
+  const [lastAction, setLastAction] = useState<DeviceAction | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refreshDevices = useCallback(async () => {
@@ -38,12 +39,16 @@ export function useMidi() {
 
   useEffect(() => {
     refreshDevices();
-    const unlisten = listen<MidiEvent>("midi_event", (event) => {
+    const unlistenEvent = listen<MidiEvent>("midi_event", (event) => {
       setLastEvent(event.payload);
+    });
+    const unlistenAction = listen<DeviceAction>("device_action", (event) => {
+      setLastAction(event.payload);
     });
 
     return () => {
-      unlisten.then((f) => f());
+      unlistenEvent.then((f) => f());
+      unlistenAction.then((f) => f());
     };
   }, [refreshDevices]);
 
@@ -51,6 +56,7 @@ export function useMidi() {
     devices,
     activeDeviceId,
     lastEvent,
+    lastAction,
     error,
     refreshDevices,
     connectDevice,

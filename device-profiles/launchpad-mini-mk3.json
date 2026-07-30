@@ -1,0 +1,904 @@
+{
+  "device_type": "json",
+  "name": "Launchpad Mini MK3 (JSON profile)",
+  "rows": 9,
+  "cols": 9,
+  "pads": [
+    {
+      "id": "ctrl-1",
+      "row": 0,
+      "col": 0,
+      "kind": "control_button",
+      "input": {
+        "message_type": "control_change",
+        "channel": 0,
+        "number": 91
+      },
+      "page_index": 8
+    },
+    {
+      "id": "ctrl-2",
+      "row": 0,
+      "col": 1,
+      "kind": "control_button",
+      "input": {
+        "message_type": "control_change",
+        "channel": 0,
+        "number": 92
+      },
+      "page_index": 9
+    },
+    {
+      "id": "ctrl-3",
+      "row": 0,
+      "col": 2,
+      "kind": "control_button",
+      "input": {
+        "message_type": "control_change",
+        "channel": 0,
+        "number": 93
+      },
+      "page_index": 10
+    },
+    {
+      "id": "ctrl-4",
+      "row": 0,
+      "col": 3,
+      "kind": "control_button",
+      "input": {
+        "message_type": "control_change",
+        "channel": 0,
+        "number": 94
+      },
+      "page_index": 11
+    },
+    {
+      "id": "ctrl-5",
+      "row": 0,
+      "col": 4,
+      "kind": "control_button",
+      "input": {
+        "message_type": "control_change",
+        "channel": 0,
+        "number": 95
+      },
+      "page_index": 12
+    },
+    {
+      "id": "ctrl-6",
+      "row": 0,
+      "col": 5,
+      "kind": "control_button",
+      "input": {
+        "message_type": "control_change",
+        "channel": 0,
+        "number": 96
+      },
+      "page_index": 13
+    },
+    {
+      "id": "ctrl-7",
+      "row": 0,
+      "col": 6,
+      "kind": "control_button",
+      "input": {
+        "message_type": "control_change",
+        "channel": 0,
+        "number": 97
+      },
+      "page_index": 14
+    },
+    {
+      "id": "ctrl-8",
+      "row": 0,
+      "col": 7,
+      "kind": "control_button",
+      "input": {
+        "message_type": "control_change",
+        "channel": 0,
+        "number": 98
+      },
+      "page_index": 15
+    },
+    {
+      "id": "pad-1-1",
+      "row": 8,
+      "col": 0,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 11
+      }
+    },
+    {
+      "id": "pad-1-2",
+      "row": 8,
+      "col": 1,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 12
+      }
+    },
+    {
+      "id": "pad-1-3",
+      "row": 8,
+      "col": 2,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 13
+      }
+    },
+    {
+      "id": "pad-1-4",
+      "row": 8,
+      "col": 3,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 14
+      }
+    },
+    {
+      "id": "pad-1-5",
+      "row": 8,
+      "col": 4,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 15
+      }
+    },
+    {
+      "id": "pad-1-6",
+      "row": 8,
+      "col": 5,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 16
+      }
+    },
+    {
+      "id": "pad-1-7",
+      "row": 8,
+      "col": 6,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 17
+      }
+    },
+    {
+      "id": "pad-1-8",
+      "row": 8,
+      "col": 7,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 18
+      }
+    },
+    {
+      "id": "pad-2-1",
+      "row": 7,
+      "col": 0,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 21
+      }
+    },
+    {
+      "id": "pad-2-2",
+      "row": 7,
+      "col": 1,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 22
+      }
+    },
+    {
+      "id": "pad-2-3",
+      "row": 7,
+      "col": 2,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 23
+      }
+    },
+    {
+      "id": "pad-2-4",
+      "row": 7,
+      "col": 3,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 24
+      }
+    },
+    {
+      "id": "pad-2-5",
+      "row": 7,
+      "col": 4,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 25
+      }
+    },
+    {
+      "id": "pad-2-6",
+      "row": 7,
+      "col": 5,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 26
+      }
+    },
+    {
+      "id": "pad-2-7",
+      "row": 7,
+      "col": 6,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 27
+      }
+    },
+    {
+      "id": "pad-2-8",
+      "row": 7,
+      "col": 7,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 28
+      }
+    },
+    {
+      "id": "pad-3-1",
+      "row": 6,
+      "col": 0,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 31
+      }
+    },
+    {
+      "id": "pad-3-2",
+      "row": 6,
+      "col": 1,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 32
+      }
+    },
+    {
+      "id": "pad-3-3",
+      "row": 6,
+      "col": 2,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 33
+      }
+    },
+    {
+      "id": "pad-3-4",
+      "row": 6,
+      "col": 3,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 34
+      }
+    },
+    {
+      "id": "pad-3-5",
+      "row": 6,
+      "col": 4,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 35
+      }
+    },
+    {
+      "id": "pad-3-6",
+      "row": 6,
+      "col": 5,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 36
+      }
+    },
+    {
+      "id": "pad-3-7",
+      "row": 6,
+      "col": 6,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 37
+      }
+    },
+    {
+      "id": "pad-3-8",
+      "row": 6,
+      "col": 7,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 38
+      }
+    },
+    {
+      "id": "pad-4-1",
+      "row": 5,
+      "col": 0,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 41
+      }
+    },
+    {
+      "id": "pad-4-2",
+      "row": 5,
+      "col": 1,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 42
+      }
+    },
+    {
+      "id": "pad-4-3",
+      "row": 5,
+      "col": 2,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 43
+      }
+    },
+    {
+      "id": "pad-4-4",
+      "row": 5,
+      "col": 3,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 44
+      }
+    },
+    {
+      "id": "pad-4-5",
+      "row": 5,
+      "col": 4,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 45
+      }
+    },
+    {
+      "id": "pad-4-6",
+      "row": 5,
+      "col": 5,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 46
+      }
+    },
+    {
+      "id": "pad-4-7",
+      "row": 5,
+      "col": 6,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 47
+      }
+    },
+    {
+      "id": "pad-4-8",
+      "row": 5,
+      "col": 7,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 48
+      }
+    },
+    {
+      "id": "pad-5-1",
+      "row": 4,
+      "col": 0,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 51
+      }
+    },
+    {
+      "id": "pad-5-2",
+      "row": 4,
+      "col": 1,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 52
+      }
+    },
+    {
+      "id": "pad-5-3",
+      "row": 4,
+      "col": 2,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 53
+      }
+    },
+    {
+      "id": "pad-5-4",
+      "row": 4,
+      "col": 3,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 54
+      }
+    },
+    {
+      "id": "pad-5-5",
+      "row": 4,
+      "col": 4,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 55
+      }
+    },
+    {
+      "id": "pad-5-6",
+      "row": 4,
+      "col": 5,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 56
+      }
+    },
+    {
+      "id": "pad-5-7",
+      "row": 4,
+      "col": 6,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 57
+      }
+    },
+    {
+      "id": "pad-5-8",
+      "row": 4,
+      "col": 7,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 58
+      }
+    },
+    {
+      "id": "pad-6-1",
+      "row": 3,
+      "col": 0,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 61
+      }
+    },
+    {
+      "id": "pad-6-2",
+      "row": 3,
+      "col": 1,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 62
+      }
+    },
+    {
+      "id": "pad-6-3",
+      "row": 3,
+      "col": 2,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 63
+      }
+    },
+    {
+      "id": "pad-6-4",
+      "row": 3,
+      "col": 3,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 64
+      }
+    },
+    {
+      "id": "pad-6-5",
+      "row": 3,
+      "col": 4,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 65
+      }
+    },
+    {
+      "id": "pad-6-6",
+      "row": 3,
+      "col": 5,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 66
+      }
+    },
+    {
+      "id": "pad-6-7",
+      "row": 3,
+      "col": 6,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 67
+      }
+    },
+    {
+      "id": "pad-6-8",
+      "row": 3,
+      "col": 7,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 68
+      }
+    },
+    {
+      "id": "pad-7-1",
+      "row": 2,
+      "col": 0,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 71
+      }
+    },
+    {
+      "id": "pad-7-2",
+      "row": 2,
+      "col": 1,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 72
+      }
+    },
+    {
+      "id": "pad-7-3",
+      "row": 2,
+      "col": 2,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 73
+      }
+    },
+    {
+      "id": "pad-7-4",
+      "row": 2,
+      "col": 3,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 74
+      }
+    },
+    {
+      "id": "pad-7-5",
+      "row": 2,
+      "col": 4,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 75
+      }
+    },
+    {
+      "id": "pad-7-6",
+      "row": 2,
+      "col": 5,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 76
+      }
+    },
+    {
+      "id": "pad-7-7",
+      "row": 2,
+      "col": 6,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 77
+      }
+    },
+    {
+      "id": "pad-7-8",
+      "row": 2,
+      "col": 7,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 78
+      }
+    },
+    {
+      "id": "pad-8-1",
+      "row": 1,
+      "col": 0,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 81
+      }
+    },
+    {
+      "id": "pad-8-2",
+      "row": 1,
+      "col": 1,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 82
+      }
+    },
+    {
+      "id": "pad-8-3",
+      "row": 1,
+      "col": 2,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 83
+      }
+    },
+    {
+      "id": "pad-8-4",
+      "row": 1,
+      "col": 3,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 84
+      }
+    },
+    {
+      "id": "pad-8-5",
+      "row": 1,
+      "col": 4,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 85
+      }
+    },
+    {
+      "id": "pad-8-6",
+      "row": 1,
+      "col": 5,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 86
+      }
+    },
+    {
+      "id": "pad-8-7",
+      "row": 1,
+      "col": 6,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 87
+      }
+    },
+    {
+      "id": "pad-8-8",
+      "row": 1,
+      "col": 7,
+      "kind": "grid_pad",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 88
+      }
+    },
+    {
+      "id": "scene-8",
+      "row": 1,
+      "col": 8,
+      "kind": "scene_button",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 89
+      },
+      "page_index": 0
+    },
+    {
+      "id": "scene-7",
+      "row": 2,
+      "col": 8,
+      "kind": "scene_button",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 79
+      },
+      "page_index": 1
+    },
+    {
+      "id": "scene-6",
+      "row": 3,
+      "col": 8,
+      "kind": "scene_button",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 69
+      },
+      "page_index": 2
+    },
+    {
+      "id": "scene-5",
+      "row": 4,
+      "col": 8,
+      "kind": "scene_button",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 59
+      },
+      "page_index": 3
+    },
+    {
+      "id": "scene-4",
+      "row": 5,
+      "col": 8,
+      "kind": "scene_button",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 49
+      },
+      "page_index": 4
+    },
+    {
+      "id": "scene-3",
+      "row": 6,
+      "col": 8,
+      "kind": "scene_button",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 39
+      },
+      "page_index": 5
+    },
+    {
+      "id": "scene-2",
+      "row": 7,
+      "col": 8,
+      "kind": "scene_button",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 29
+      },
+      "page_index": 6
+    },
+    {
+      "id": "scene-1",
+      "row": 8,
+      "col": 8,
+      "kind": "scene_button",
+      "input": {
+        "message_type": "note",
+        "channel": 0,
+        "number": 19
+      },
+      "page_index": 7
+    }
+  ]
+}

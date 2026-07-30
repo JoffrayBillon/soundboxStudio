@@ -1,0 +1,6 @@
+{
+  "device_type": "launchpad_mini_mk3",
+  "name": "Launchpad Mini MK3",
+  "programmer_mode": true,
+  "page_change_notes": [89, 79, 69, 59, 49, 39, 29, 19]
+}

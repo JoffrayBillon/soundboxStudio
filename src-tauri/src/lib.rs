@@ -39,6 +39,14 @@ pub fn run() {
             commands::delete_profile,
             commands::create_profile,
             commands::get_active_profile,
+            // Device controller
+            commands::load_device_profile,
+            commands::use_launchpad_mini_mk3,
+            commands::use_generic_controller,
+            commands::get_device_controller_info,
+            commands::get_device_layout,
+            commands::set_pad_color,
+            commands::translate_midi_message,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

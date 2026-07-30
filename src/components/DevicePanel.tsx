@@ -6,10 +6,18 @@ interface DevicePanelProps {
   activeDeviceId: number | null;
   audioDevices: AudioDevice[];
   activeAudioId: string | null;
+  /// Name of the currently active `MidiController` driver/profile (as
+  /// reported by `get_device_controller_info`), e.g. "Launchpad Mini MK3" or
+  /// a custom JSON profile's `name`. `null` when no device is connected.
+  controllerName: string | null;
   onConnectMidi: (id: number) => void;
   onDisconnectMidi: () => void;
   onRefreshMidi: () => void;
   onSelectAudio: (id: string) => void;
+  /// Opens a file picker for a `DeviceProfileConfig` JSON file and activates
+  /// it, to support devices that have no dedicated driver without touching
+  /// any code.
+  onLoadCustomProfile: () => void;
 }
 
 export const DevicePanel: React.FC<DevicePanelProps> = ({
@@ -17,10 +25,12 @@ export const DevicePanel: React.FC<DevicePanelProps> = ({
   activeDeviceId,
   audioDevices,
   activeAudioId,
+  controllerName,
   onConnectMidi,
   onDisconnectMidi,
   onRefreshMidi,
   onSelectAudio,
+  onLoadCustomProfile,
 }) => {
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900 rounded-xl border border-gray-800">
@@ -70,6 +80,19 @@ export const DevicePanel: React.FC<DevicePanelProps> = ({
             })
           )}
         </div>
+        <button
+          onClick={onLoadCustomProfile}
+          className="w-full mt-2 text-xs text-gray-500 hover:text-violet-400 transition-colors text-left"
+          title="Load a DeviceProfileConfig JSON file to support a controller with no built-in driver"
+        >
+          Load custom profile (JSON)…
+        </button>
+        {controllerName && (
+          <p className="mt-2 text-[11px] text-gray-500 truncate" title={controllerName}>
+            Active layout:{" "}
+            <span className="text-gray-300 font-medium">{controllerName}</span>
+          </p>
+        )}
       </div>
 
       {/* Audio Output Section */}

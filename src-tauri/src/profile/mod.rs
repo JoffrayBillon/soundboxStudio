@@ -1,5 +1,5 @@
 pub mod schema;
-pub use schema::Profile;
+pub use schema::{GridPadSpec, Profile};
 
 use std::fs;
 use std::path::PathBuf;

@@ -22,7 +22,7 @@ fn settings_path() -> AppResult<PathBuf> {
     Ok(dir.join("settings.json"))
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     /// Matched by name (not the transient numeric port index returned by
     /// `list_midi_devices`, which can shift between runs depending on OS
@@ -32,6 +32,38 @@ pub struct AppSettings {
     /// cpal device name, also used as `AudioDevice.id`.
     pub last_audio_device_id: Option<String>,
     pub last_profile_id: Option<String>,
+    /// Global output gain multiplier (1.0 = unity), applied on top of each
+    /// pad's own volume/normalization gain. `#[serde(default = ...)]` so
+    /// settings.json files saved before this field existed still parse,
+    /// defaulting to unity instead of `f32::default()` (0.0, which would
+    /// silently mute everything).
+    #[serde(default = "default_master_volume")]
+    pub master_volume: f32,
+    /// When true, playback multiplies each pad's volume by its cached
+    /// `PadConfig.normalized_gain` so louder/quieter source recordings play
+    /// back at a more consistent perceived loudness.
+    #[serde(default)]
+    pub normalize_volumes: bool,
+}
+
+fn default_master_volume() -> f32 {
+    1.0
+}
+
+// Manual `Default` impl (rather than `#[derive(Default)]`) so
+// `master_volume` defaults to unity (1.0) instead of `f32::default()`
+// (0.0, which would silently mute all playback) — this is the fallback
+// used by `load()` when settings.json doesn't exist yet or fails to parse.
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            last_midi_device_name: None,
+            last_audio_device_id: None,
+            last_profile_id: None,
+            master_volume: default_master_volume(),
+            normalize_volumes: false,
+        }
+    }
 }
 
 /// Loads settings from disk, falling back to defaults (all `None`) if the

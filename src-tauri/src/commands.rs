@@ -79,6 +79,35 @@ pub fn stop_all_sounds(state: State<'_, AppState>) -> AppResult<()> {
     state.audio.lock().stop_all_sounds()
 }
 
+/// Sets the global output gain multiplier (1.0 = unity) applied on top of
+/// every pad's own volume/normalization gain. Live-only — the caller (see
+/// `useAppSettings`) is responsible for persisting it via
+/// `save_app_settings` once the user finishes dragging the slider.
+#[tauri::command]
+pub fn set_master_volume(volume: f32, state: State<'_, AppState>) -> AppResult<()> {
+    state.audio.lock().set_master_volume(volume);
+    Ok(())
+}
+
+/// Toggles whether playback applies each pad's cached
+/// `PadConfig::normalized_gain`. Live-only, same persistence caveat as
+/// `set_master_volume`.
+#[tauri::command]
+pub fn set_normalize_volumes(enabled: bool, state: State<'_, AppState>) -> AppResult<()> {
+    state.normalize_volumes.store(enabled, Ordering::Relaxed);
+    Ok(())
+}
+
+/// Decodes `file_path` and returns the gain that would bring its peak
+/// amplitude to a consistent target level (see
+/// `audio::engine::analyze_normalization_gain`). Called once when a sound
+/// is assigned to a pad; the result is cached as that pad's
+/// `normalized_gain` rather than recomputed on every play.
+#[tauri::command]
+pub fn compute_sound_gain(file_path: String) -> AppResult<f32> {
+    crate::audio::engine::analyze_normalization_gain(&file_path)
+}
+
 // ─── Profile commands ─────────────────────────────────────────────────────────
 
 #[tauri::command]
@@ -447,10 +476,19 @@ pub fn trigger_pad(
         return Ok(false);
     };
 
+    // Only actually apply the cached normalization gain when the user has
+    // enabled "normalize volumes" — otherwise a pad's own `volume` (default
+    // unity) is used unmodified, same as before this feature existed.
+    let effective_volume = if state.normalize_volumes.load(Ordering::Relaxed) {
+        pad.volume * pad.normalized_gain
+    } else {
+        pad.volume
+    };
+
     state
         .audio
         .lock()
-        .play_for_pad(pad_id.clone(), &sound_path, pad.volume)?;
+        .play_for_pad(pad_id.clone(), &sound_path, effective_volume)?;
 
     let flag = Arc::new(AtomicBool::new(true));
     state

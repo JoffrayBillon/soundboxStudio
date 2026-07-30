@@ -14,6 +14,10 @@ export interface PadConfig {
   color: string;
   sound_path: string | null;
   volume: number;
+  /** Cached per-sound normalization gain (see `compute_sound_gain`), only
+   * actually applied during playback when `AppSettings.normalize_volumes`
+   * is enabled. */
+  normalized_gain: number;
 }
 
 export interface Profile {

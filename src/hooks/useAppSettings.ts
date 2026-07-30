@@ -5,12 +5,18 @@ export interface AppSettings {
   last_midi_device_name: string | null;
   last_audio_device_id: string | null;
   last_profile_id: string | null;
+  /** Global output gain multiplier (1.0 = unity). */
+  master_volume: number;
+  /** Whether playback applies each pad's cached `normalized_gain`. */
+  normalize_volumes: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   last_midi_device_name: null,
   last_audio_device_id: null,
   last_profile_id: null,
+  master_volume: 1.0,
+  normalize_volumes: false,
 };
 
 /// Persists the last-used MIDI device / audio output / profile (see

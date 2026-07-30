@@ -25,10 +25,20 @@ pub fn run() {
         .setup(|app| {
             app.manage(AppState::new());
 
+            // Re-applies the persisted master volume / normalize-volumes
+            // preference (see `settings.rs`) to the live audio engine right
+            // away, so playback is correct from the very first sound even
+            // if the frontend never re-sends them itself.
+            let state = app.state::<AppState>();
+            let saved_settings = settings::load();
+            state.audio.lock().set_master_volume(saved_settings.master_volume);
+            state
+                .normalize_volumes
+                .store(saved_settings.normalize_volumes, std::sync::atomic::Ordering::Relaxed);
+
             // Watches for pads whose sound finishes playing on its own
             // (as opposed to a manual re-click) and reverts their LED /
             // "currently playing" bookkeeping accordingly.
-            let state = app.state::<AppState>();
             let finished_rx = state.audio.lock().take_finished_receiver();
             let app_handle = app.handle().clone();
             if let Some(finished_rx) = finished_rx {
@@ -49,6 +59,9 @@ pub fn run() {
             commands::set_audio_output_device,
             commands::play_sound_file,
             commands::stop_all_sounds,
+            commands::set_master_volume,
+            commands::set_normalize_volumes,
+            commands::compute_sound_gain,
             commands::trigger_pad,
             commands::sync_pad_led,
             commands::list_profiles,

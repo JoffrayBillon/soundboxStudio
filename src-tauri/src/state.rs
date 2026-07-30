@@ -21,6 +21,11 @@ pub struct AppState {
     /// re-click or once the sound finishes naturally); presence in this map
     /// is also the source of truth for "is this pad currently playing".
     pub playing_pads: Mutex<HashMap<String, Arc<AtomicBool>>>,
+    /// Whether playback should apply each pad's cached
+    /// `PadConfig::normalized_gain` (see `commands::trigger_pad`). Mirrors
+    /// `AppSettings.normalize_volumes`, applied at startup and whenever the
+    /// user toggles the "normalize volumes" setting.
+    pub normalize_volumes: AtomicBool,
 }
 
 impl AppState {
@@ -31,7 +36,9 @@ impl AppState {
             active_profile: Mutex::new(None),
             device_controller: Arc::new(Mutex::new(None)),
             playing_pads: Mutex::new(HashMap::new()),
+            normalize_volumes: AtomicBool::new(false),
         }
     }
 }
+
 

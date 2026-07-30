@@ -14,6 +14,20 @@ pub struct PadConfig {
     pub color: String,
     pub sound_path: Option<String>,
     pub volume: f32,
+    /// Per-sound normalization gain, computed once from the source file's
+    /// peak amplitude when a sound is assigned (see `commands::compute_sound_gain`)
+    /// and cached here so it doesn't need to be recomputed on every play.
+    /// Only actually applied during playback when the user has enabled
+    /// "normalize volumes" (`AppSettings.normalize_volumes` /
+    /// `AppState.normalize_volumes`); otherwise ignored. Defaults to unity
+    /// (1.0, i.e. no adjustment) for profiles saved before this field
+    /// existed.
+    #[serde(default = "default_normalized_gain")]
+    pub normalized_gain: f32,
+}
+
+fn default_normalized_gain() -> f32 {
+    1.0
 }
 
 impl Default for PadConfig {
@@ -25,6 +39,7 @@ impl Default for PadConfig {
             color: "#1F2937".to_string(),
             sound_path: None,
             volume: 1.0,
+            normalized_gain: 1.0,
         }
     }
 }

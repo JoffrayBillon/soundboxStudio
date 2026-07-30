@@ -6,6 +6,7 @@ import { DevicePanel } from "./components/DevicePanel";
 import { MidiMonitor } from "./components/MidiMonitor";
 import { PadGrid } from "./components/PadGrid";
 import { ProfileManager } from "./components/ProfileManager";
+import { SettingsPanel } from "./components/SettingsPanel";
 import { StatusBar } from "./components/StatusBar";
 import { useMidi } from "./hooks/useMidi";
 import { useAudio } from "./hooks/useAudio";
@@ -54,6 +55,7 @@ export default function App() {
   // `PadGrid` can highlight it as a drop target (null when not dragging or
   // hovering empty space).
   const [dragOverPadId, setDragOverPadId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const activeDevice = midiDevices.find((d) => d.id === activeDeviceId);
   const {
@@ -135,6 +137,34 @@ export default function App() {
     }
   }, []);
 
+  // Master volume: applied live to the audio engine on every slider tick,
+  // but only persisted to disk once the drag ends (see `SettingsPanel`) —
+  // otherwise every pixel of movement would trigger a settings.json write.
+  const handleMasterVolumeChange = useCallback((volume: number) => {
+    invoke("set_master_volume", { volume }).catch((err) => {
+      console.error("Failed to set master volume:", err);
+    });
+  }, []);
+
+  const handleMasterVolumeCommit = useCallback(
+    (volume: number) => {
+      updateSettings({ master_volume: volume });
+    },
+    [updateSettings]
+  );
+
+  // Normalize-volumes toggle: applied live and persisted immediately since
+  // it's a single discrete click, not a continuous drag.
+  const handleNormalizeVolumesChange = useCallback(
+    (enabled: boolean) => {
+      invoke("set_normalize_volumes", { enabled }).catch((err) => {
+        console.error("Failed to set normalize volumes:", err);
+      });
+      updateSettings({ normalize_volumes: enabled });
+    },
+    [updateSettings]
+  );
+
   // Lets the user pick a `DeviceProfileConfig` JSON file (see
   // `device_profile.rs`) to support a device that has no dedicated Rust
   // driver, without writing any code.
@@ -197,15 +227,27 @@ export default function App() {
   // Shared by both the file-picker flow (`handleAssignSound`) and dropping a
   // file onto a pad (drag-and-drop effect below) — assigns `filePath` as the
   // pad's sound, creating a new `PadConfig` entry if the pad had none yet.
+  // Also (re)computes the file's normalization gain so "normalize volumes"
+  // (see `SettingsPanel`) has an up-to-date value cached the moment a sound
+  // is assigned, instead of needing a separate step.
   const assignSoundPath = useCallback(
     async (id: string, filePath: string) => {
       if (!activeProfile) return;
+
+      let normalizedGain = 1.0;
+      try {
+        normalizedGain = await invoke<number>("compute_sound_gain", { filePath });
+      } catch (err) {
+        console.error("Failed to analyze sound for normalization:", err);
+      }
 
       const existing = activeProfile.pads.find((p) => p.id === id);
       const layoutPad = deviceLayout?.pads.find((p) => p.id === id);
       const updatedPads: PadConfig[] = existing
         ? activeProfile.pads.map((p) =>
-            p.id === id ? { ...p, sound_path: filePath } : p
+            p.id === id
+              ? { ...p, sound_path: filePath, normalized_gain: normalizedGain }
+              : p
           )
         : [
             ...activeProfile.pads,
@@ -216,6 +258,7 @@ export default function App() {
               color: "#1F2937",
               sound_path: filePath,
               volume: 1.0,
+              normalized_gain: normalizedGain,
             },
           ];
 
@@ -330,6 +373,14 @@ export default function App() {
             Soundbox Studio
           </h1>
         </div>
+        <button
+          className="text-gray-400 hover:text-gray-100 text-lg leading-none px-2 py-1 rounded hover:bg-gray-800"
+          onClick={() => setShowSettings(true)}
+          aria-label="Sound settings"
+          title="Sound settings"
+        >
+          ⚙
+        </button>
       </header>
 
       {/* Main layout */}
@@ -409,6 +460,17 @@ export default function App() {
         deviceName={activeDevice?.name ?? null}
         profileName={activeProfile?.name ?? null}
       />
+
+      {showSettings && (
+        <SettingsPanel
+          masterVolume={settings.master_volume}
+          normalizeVolumes={settings.normalize_volumes}
+          onMasterVolumeChange={handleMasterVolumeChange}
+          onMasterVolumeCommit={handleMasterVolumeCommit}
+          onNormalizeVolumesChange={handleNormalizeVolumesChange}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
 
       {padContextMenu && (
         <>

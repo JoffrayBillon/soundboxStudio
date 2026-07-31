@@ -172,6 +172,51 @@ pub fn save_app_settings(settings: crate::settings::AppSettings) -> AppResult<()
     crate::settings::save(&settings)
 }
 
+/// Registers (or unregisters) the app to launch automatically when the OS
+/// starts, and updates the live `AppState` flags accordingly. Launching at
+/// startup only makes sense together with minimizing to the tray on close
+/// — otherwise the app would auto-launch invisibly-ish and then vanish
+/// entirely the first time its window is closed, with no way to reach it
+/// again short of relaunching manually — so enabling it also force-enables
+/// `minimize_to_tray_on_close`. Returns the resulting (possibly
+/// force-updated) value of `minimize_to_tray_on_close` so the caller's UI
+/// always reflects what's actually in effect rather than trusting its own
+/// optimistic guess.
+#[tauri::command]
+pub fn set_launch_at_startup(
+    enabled: bool,
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) -> AppResult<bool> {
+    use tauri_plugin_autostart::ManagerExt;
+
+    let autolaunch = app_handle.autolaunch();
+    let result = if enabled {
+        autolaunch.enable()
+    } else {
+        autolaunch.disable()
+    };
+    result.map_err(|e| AppError::Io(e.to_string()))?;
+
+    state.launch_at_startup.store(enabled, Ordering::Relaxed);
+    if enabled {
+        state.minimize_to_tray_on_close.store(true, Ordering::Relaxed);
+    }
+    Ok(state.minimize_to_tray_on_close.load(Ordering::Relaxed))
+}
+
+/// Toggles whether closing the main window hides it to the system tray
+/// instead of quitting (see the `CloseRequested` handler in `lib.rs`).
+/// Can't actually be turned off while `launch_at_startup` is enabled — see
+/// `set_launch_at_startup` — so this also returns the resulting effective
+/// value rather than assuming the caller's requested one took effect.
+#[tauri::command]
+pub fn set_minimize_to_tray(enabled: bool, state: State<'_, AppState>) -> AppResult<bool> {
+    let effective = enabled || state.launch_at_startup.load(Ordering::Relaxed);
+    state.minimize_to_tray_on_close.store(effective, Ordering::Relaxed);
+    Ok(effective)
+}
+
 // ─── Device controller commands ───────────────────────────────────────────────
 
 /// Info about the currently loaded device driver, returned to the frontend.

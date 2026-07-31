@@ -11,6 +11,12 @@ interface SettingsPanelProps {
    * value to disk so it survives an app restart. */
   onMasterVolumeCommit: (volume: number) => void;
   onNormalizeVolumesChange: (enabled: boolean) => void;
+  launchAtStartup: boolean;
+  minimizeToTrayOnClose: boolean;
+  onLaunchAtStartupChange: (enabled: boolean) => void;
+  onMinimizeToTrayChange: (enabled: boolean) => void;
+  showMidiMonitor: boolean;
+  onShowMidiMonitorChange: (enabled: boolean) => void;
   onClose: () => void;
 }
 
@@ -26,6 +32,12 @@ export function SettingsPanel({
   onMasterVolumeChange,
   onMasterVolumeCommit,
   onNormalizeVolumesChange,
+  launchAtStartup,
+  minimizeToTrayOnClose,
+  onLaunchAtStartupChange,
+  onMinimizeToTrayChange,
+  showMidiMonitor,
+  onShowMidiMonitorChange,
   onClose,
 }: SettingsPanelProps) {
   // Local live value so the slider tracks the pointer smoothly without
@@ -49,7 +61,7 @@ export function SettingsPanel({
       <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} />
       <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 rounded-lg border border-gray-700 bg-gray-900 shadow-2xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-100">Sound settings</h2>
+          <h2 className="text-sm font-semibold text-gray-100">Settings</h2>
           <button
             className="text-gray-500 hover:text-gray-200 text-lg leading-none"
             onClick={onClose}
@@ -103,6 +115,76 @@ export function SettingsPanel({
               Automatically levels each sound's loudest point so louder
               recordings don't overpower quieter ones. Computed once per
               sound when it's assigned to a pad.
+            </span>
+          </span>
+        </label>
+
+        <div className="my-4 border-t border-gray-800" />
+
+        <div className="flex flex-col gap-3">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={launchAtStartup}
+              onChange={(e) => onLaunchAtStartupChange(e.target.checked)}
+              className="mt-0.5 accent-violet-600"
+            />
+            <span>
+              <span className="text-xs font-medium text-gray-300 block">
+                Launch at system startup
+              </span>
+              <span className="text-[11px] text-gray-600 block mt-0.5">
+                Starts Soundbox Studio automatically when you log in.
+              </span>
+            </span>
+          </label>
+
+          {/* Forced on (and locked) whenever launch-at-startup is enabled —
+              otherwise the app would auto-launch and then vanish entirely
+              the first time its window is closed, with no way back short of
+              relaunching manually. */}
+          <label
+            className={
+              "flex items-start gap-2 " +
+              (launchAtStartup ? "cursor-not-allowed opacity-60" : "cursor-pointer")
+            }
+          >
+            <input
+              type="checkbox"
+              checked={minimizeToTrayOnClose}
+              disabled={launchAtStartup}
+              onChange={(e) => onMinimizeToTrayChange(e.target.checked)}
+              className="mt-0.5 accent-violet-600"
+            />
+            <span>
+              <span className="text-xs font-medium text-gray-300 block">
+                Minimize to system tray on close
+              </span>
+              <span className="text-[11px] text-gray-600 block mt-0.5">
+                {launchAtStartup
+                  ? 'Required while "Launch at system startup" is enabled.'
+                  : "Closing the window hides it to the tray instead of quitting."}
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div className="my-4 border-t border-gray-800" />
+
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showMidiMonitor}
+            onChange={(e) => onShowMidiMonitorChange(e.target.checked)}
+            className="mt-0.5 accent-violet-600"
+          />
+          <span>
+            <span className="text-xs font-medium text-gray-300 block">
+              Show MIDI monitor
+            </span>
+            <span className="text-[11px] text-gray-600 block mt-0.5">
+              Displays a live feed of incoming MIDI messages below the pad
+              grid. Useful for development/debugging, off by default.
             </span>
           </span>
         </label>

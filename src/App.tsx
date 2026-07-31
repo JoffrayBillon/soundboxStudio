@@ -167,6 +167,53 @@ export default function App() {
     [updateSettings]
   );
 
+  // Launch-at-startup toggle: the backend also force-enables
+  // `minimize_to_tray_on_close` when this is turned on (an app that
+  // auto-launches at boot needs some way to still be reached afterward), so
+  // we persist whatever effective tray value it hands back rather than
+  // assuming our own request took effect as-is.
+  const handleLaunchAtStartupChange = useCallback(
+    (enabled: boolean) => {
+      invoke<boolean>("set_launch_at_startup", { enabled })
+        .then((effectiveMinimizeToTray) => {
+          updateSettings({
+            launch_at_startup: enabled,
+            minimize_to_tray_on_close: effectiveMinimizeToTray,
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to set launch at startup:", err);
+        });
+    },
+    [updateSettings]
+  );
+
+  // Minimize-to-tray toggle: can't actually be turned off while
+  // launch-at-startup is enabled (enforced backend-side), so we again
+  // persist whatever effective value the backend returns.
+  const handleMinimizeToTrayChange = useCallback(
+    (enabled: boolean) => {
+      invoke<boolean>("set_minimize_to_tray", { enabled })
+        .then((effective) => {
+          updateSettings({ minimize_to_tray_on_close: effective });
+        })
+        .catch((err) => {
+          console.error("Failed to set minimize to tray:", err);
+        });
+    },
+    [updateSettings]
+  );
+
+  // Pure display preference, no live Rust-side state to sync — persisted
+  // like any other setting so it's grouped with the rest in one place
+  // instead of a standalone header toggle.
+  const handleShowMidiMonitorChange = useCallback(
+    (enabled: boolean) => {
+      updateSettings({ show_midi_monitor: enabled });
+    },
+    [updateSettings]
+  );
+
   // Lets the user pick a `DeviceProfileConfig` JSON file (see
   // `device_profile.rs`) to support a device that has no dedicated Rust
   // driver, without writing any code.
@@ -464,9 +511,11 @@ export default function App() {
           )}
 
 
-          <div className="flex-shrink-0 p-3 border-t border-gray-800">
-            <MidiMonitor lastEvent={lastEvent} />
-          </div>
+          {settings.show_midi_monitor && (
+            <div className="flex-shrink-0 p-3 border-t border-gray-800">
+              <MidiMonitor lastEvent={lastEvent} />
+            </div>
+          )}
         </main>
       </div>
 
@@ -483,6 +532,12 @@ export default function App() {
           onMasterVolumeChange={handleMasterVolumeChange}
           onMasterVolumeCommit={handleMasterVolumeCommit}
           onNormalizeVolumesChange={handleNormalizeVolumesChange}
+          launchAtStartup={settings.launch_at_startup}
+          minimizeToTrayOnClose={settings.minimize_to_tray_on_close}
+          onLaunchAtStartupChange={handleLaunchAtStartupChange}
+          onMinimizeToTrayChange={handleMinimizeToTrayChange}
+          showMidiMonitor={settings.show_midi_monitor}
+          onShowMidiMonitorChange={handleShowMidiMonitorChange}
           onClose={() => setShowSettings(false)}
         />
       )}

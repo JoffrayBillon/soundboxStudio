@@ -9,6 +9,13 @@ export interface AppSettings {
   master_volume: number;
   /** Whether playback applies each pad's cached `normalized_gain`. */
   normalize_volumes: boolean;
+  /** Whether the app registers itself to launch when the OS starts. */
+  launch_at_startup: boolean;
+  /** Whether closing the main window hides it to the system tray instead
+   * of quitting. Forced `true` whenever `launch_at_startup` is enabled. */
+  minimize_to_tray_on_close: boolean;
+  /** Whether the MIDI monitor debug panel is shown. Off by default. */
+  show_midi_monitor: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -17,6 +24,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   last_profile_id: null,
   master_volume: 1.0,
   normalize_volumes: false,
+  launch_at_startup: false,
+  minimize_to_tray_on_close: false,
+  show_midi_monitor: false,
 };
 
 /// Persists the last-used MIDI device / audio output / profile (see

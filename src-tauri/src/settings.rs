@@ -44,6 +44,22 @@ pub struct AppSettings {
     /// back at a more consistent perceived loudness.
     #[serde(default)]
     pub normalize_volumes: bool,
+    /// Whether the app registers itself to launch automatically when the
+    /// OS starts (see `commands::set_launch_at_startup`).
+    #[serde(default)]
+    pub launch_at_startup: bool,
+    /// Whether closing the main window hides it to the system tray instead
+    /// of quitting. Forced to `true` whenever `launch_at_startup` is
+    /// enabled (see `commands::set_launch_at_startup` /
+    /// `set_minimize_to_tray`) — otherwise an app that auto-launches at
+    /// boot would have no way to be reached again after its first close.
+    #[serde(default)]
+    pub minimize_to_tray_on_close: bool,
+    /// Whether the MIDI monitor debug panel is shown at the bottom of the
+    /// pad grid. A dev/debug aid, off by default so it doesn't clutter the
+    /// UI during normal use.
+    #[serde(default)]
+    pub show_midi_monitor: bool,
 }
 
 fn default_master_volume() -> f32 {
@@ -62,6 +78,9 @@ impl Default for AppSettings {
             last_profile_id: None,
             master_volume: default_master_volume(),
             normalize_volumes: false,
+            launch_at_startup: false,
+            minimize_to_tray_on_close: false,
+            show_midi_monitor: false,
         }
     }
 }

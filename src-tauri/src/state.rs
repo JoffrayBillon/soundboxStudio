@@ -26,6 +26,17 @@ pub struct AppState {
     /// `AppSettings.normalize_volumes`, applied at startup and whenever the
     /// user toggles the "normalize volumes" setting.
     pub normalize_volumes: AtomicBool,
+    /// Mirrors `AppSettings.launch_at_startup`. Kept in `AppState` (in
+    /// addition to the OS-level registration itself) so
+    /// `set_minimize_to_tray` can cheaply check it without re-reading
+    /// settings.json.
+    pub launch_at_startup: AtomicBool,
+    /// Whether closing the main window should hide it to the system tray
+    /// instead of quitting the app (see `lib.rs`'s window `CloseRequested`
+    /// handler). Forced to `true` whenever `launch_at_startup` is enabled —
+    /// otherwise an app that auto-launches at boot would have no way to be
+    /// reached again after its first close.
+    pub minimize_to_tray_on_close: AtomicBool,
 }
 
 impl AppState {
@@ -37,6 +48,8 @@ impl AppState {
             device_controller: Arc::new(Mutex::new(None)),
             playing_pads: Mutex::new(HashMap::new()),
             normalize_volumes: AtomicBool::new(false),
+            launch_at_startup: AtomicBool::new(false),
+            minimize_to_tray_on_close: AtomicBool::new(false),
         }
     }
 }

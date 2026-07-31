@@ -6,8 +6,13 @@ mod profile;
 mod settings;
 mod state;
 
+use std::sync::atomic::Ordering;
+
 use state::AppState;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,22 +24,43 @@ pub fn run() {
         .init();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             app.manage(AppState::new());
 
-            // Re-applies the persisted master volume / normalize-volumes
-            // preference (see `settings.rs`) to the live audio engine right
-            // away, so playback is correct from the very first sound even
-            // if the frontend never re-sends them itself.
+            // Re-applies the persisted master volume / normalize-volumes /
+            // launch-at-startup / minimize-to-tray preferences (see
+            // `settings.rs`) right away, so behaviour is correct from the
+            // very first moment even if the frontend never re-sends them.
             let state = app.state::<AppState>();
             let saved_settings = settings::load();
             state.audio.lock().set_master_volume(saved_settings.master_volume);
             state
                 .normalize_volumes
-                .store(saved_settings.normalize_volumes, std::sync::atomic::Ordering::Relaxed);
+                .store(saved_settings.normalize_volumes, Ordering::Relaxed);
+            state
+                .launch_at_startup
+                .store(saved_settings.launch_at_startup, Ordering::Relaxed);
+            state.minimize_to_tray_on_close.store(
+                saved_settings.minimize_to_tray_on_close || saved_settings.launch_at_startup,
+                Ordering::Relaxed,
+            );
+
+            // Reconciles the actual OS-level autostart registration with
+            // our saved preference on every launch — the user could have
+            // removed it directly from the OS's own startup-apps settings
+            // without going through our UI, or reinstalled the app, so
+            // this can't just be assumed to still match. Both calls are
+            // idempotent no-ops if already in the desired state.
+            let autolaunch = app.autolaunch();
+            let _ = if saved_settings.launch_at_startup {
+                autolaunch.enable()
+            } else {
+                autolaunch.disable()
+            };
 
             // Watches for pads whose sound finishes playing on its own
             // (as opposed to a manual re-click) and reverts their LED /
@@ -45,6 +71,65 @@ pub fn run() {
                 std::thread::spawn(move || {
                     for pad_id in finished_rx {
                         commands::stop_pad_playback(&app_handle, &pad_id);
+                    }
+                });
+            }
+
+            // System tray icon: lets the app keep running (MIDI/audio
+            // engine, Programmer Mode, etc. all stay live) after the main
+            // window is closed when "minimize to tray" is enabled, with a
+            // way to bring the window back or actually quit.
+            let show_item = MenuItem::with_id(app, "show", "Afficher Soundbox Studio", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
+            let tray_menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().cloned().unwrap())
+                .menu(&tray_menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            // Hides (instead of closing) the main window when "minimize to
+            // tray" is enabled, so the app keeps running in the background
+            // — the only way to actually quit is then the tray's "Quitter"
+            // item (or the OS killing the process). When the setting is
+            // off, this is a no-op and the window closes normally, which
+            // triggers the `RunEvent::ExitRequested` handler below.
+            if let Some(window) = app.get_webview_window("main") {
+                let close_app_handle = app.handle().clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        let state = close_app_handle.state::<AppState>();
+                        if state.minimize_to_tray_on_close.load(Ordering::Relaxed) {
+                            api.prevent_close();
+                            if let Some(window) = close_app_handle.get_webview_window("main") {
+                                let _ = window.hide();
+                            }
+                        }
                     }
                 });
             }
@@ -81,6 +166,8 @@ pub fn run() {
             commands::resync_device,
             commands::load_app_settings,
             commands::save_app_settings,
+            commands::set_launch_at_startup,
+            commands::set_minimize_to_tray,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
